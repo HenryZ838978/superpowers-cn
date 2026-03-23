@@ -3,21 +3,21 @@ name: using-git-worktrees
 description: Use when starting feature work that needs isolation from current workspace or before executing implementation plans - creates isolated git worktrees with smart directory selection and safety verification
 ---
 
-# Using Git Worktrees
+# 使用 Git Worktrees
 
-## Overview
+## 概述
 
-Git worktrees create isolated workspaces sharing the same repository, allowing work on multiple branches simultaneously without switching.
+Git worktree 创建共享同一仓库的隔离工作区，可同时工作在多个分支而无需频繁切换。
 
-**Core principle:** Systematic directory selection + safety verification = reliable isolation.
+**核心原则：** 系统化选择目录 + 安全验证 = 可靠隔离。
 
-**Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
+**开始时声明：**「我正在使用 using-git-worktrees skill 来建立隔离工作区。」
 
-## Directory Selection Process
+## 目录选择流程
 
-Follow this priority order:
+按以下优先级：
 
-### 1. Check Existing Directories
+### 1. 检查已有目录
 
 ```bash
 # Check in priority order
@@ -25,19 +25,19 @@ ls -d .worktrees 2>/dev/null     # Preferred (hidden)
 ls -d worktrees 2>/dev/null      # Alternative
 ```
 
-**If found:** Use that directory. If both exist, `.worktrees` wins.
+**若找到：** 使用该目录。若两者都存在，优先 `.worktrees`。
 
-### 2. Check CLAUDE.md
+### 2. 检查 CLAUDE.md
 
 ```bash
 grep -i "worktree.*director" CLAUDE.md 2>/dev/null
 ```
 
-**If preference specified:** Use it without asking.
+**若指定了偏好：** 直接使用，不必再问。
 
-### 3. Ask User
+### 3. 询问用户
 
-If no directory exists and no CLAUDE.md preference:
+若既无目录也无 CLAUDE.md 偏好：
 
 ```
 No worktree directory found. Where should I create worktrees?
@@ -48,39 +48,39 @@ No worktree directory found. Where should I create worktrees?
 Which would you prefer?
 ```
 
-## Safety Verification
+## 安全验证
 
-### For Project-Local Directories (.worktrees or worktrees)
+### 项目本地目录（.worktrees 或 worktrees）
 
-**MUST verify directory is ignored before creating worktree:**
+**创建 worktree 前必须确认目录已被 ignore：**
 
 ```bash
 # Check if directory is ignored (respects local, global, and system gitignore)
 git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
 ```
 
-**If NOT ignored:**
+**若未被 ignore：**
 
-Per Jesse's rule "Fix broken things immediately":
-1. Add appropriate line to .gitignore
-2. Commit the change
-3. Proceed with worktree creation
+按 Jesse 的规则「坏了就立刻修」：
+1. 在 .gitignore 中加入合适规则  
+2. commit 该变更  
+3. 再继续创建 worktree  
 
-**Why critical:** Prevents accidentally committing worktree contents to repository.
+**为何关键：** 避免误将 worktree 内容 commit 进仓库。
 
-### For Global Directory (~/.config/superpowers/worktrees)
+### 全局目录（~/.config/superpowers/worktrees）
 
-No .gitignore verification needed - outside project entirely.
+完全在项目外，无需 .gitignore 验证。
 
-## Creation Steps
+## 创建步骤
 
-### 1. Detect Project Name
+### 1. 检测项目名
 
 ```bash
 project=$(basename "$(git rev-parse --show-toplevel)")
 ```
 
-### 2. Create Worktree
+### 2. 创建 Worktree
 
 ```bash
 # Determine full path
@@ -98,9 +98,9 @@ git worktree add "$path" -b "$BRANCH_NAME"
 cd "$path"
 ```
 
-### 3. Run Project Setup
+### 3. 运行项目初始化
 
-Auto-detect and run appropriate setup:
+自动检测并执行合适步骤：
 
 ```bash
 # Node.js
@@ -117,9 +117,9 @@ if [ -f pyproject.toml ]; then poetry install; fi
 if [ -f go.mod ]; then go mod download; fi
 ```
 
-### 4. Verify Clean Baseline
+### 4. 验证干净基线
 
-Run tests to ensure worktree starts clean:
+运行测试，确保 worktree 从干净状态开始：
 
 ```bash
 # Examples - use project-appropriate command
@@ -129,11 +129,11 @@ pytest
 go test ./...
 ```
 
-**If tests fail:** Report failures, ask whether to proceed or investigate.
+**若测试失败：** 报告失败，询问是继续还是调查。
 
-**If tests pass:** Report ready.
+**若测试通过：** 报告就绪。
 
-### 5. Report Location
+### 5. 报告位置
 
 ```
 Worktree ready at <full-path>
@@ -141,41 +141,41 @@ Tests passing (<N> tests, 0 failures)
 Ready to implement <feature-name>
 ```
 
-## Quick Reference
+## 速查
 
-| Situation | Action |
+| 情况 | 动作 |
 |-----------|--------|
-| `.worktrees/` exists | Use it (verify ignored) |
-| `worktrees/` exists | Use it (verify ignored) |
-| Both exist | Use `.worktrees/` |
-| Neither exists | Check CLAUDE.md → Ask user |
-| Directory not ignored | Add to .gitignore + commit |
-| Tests fail during baseline | Report failures + ask |
-| No package.json/Cargo.toml | Skip dependency install |
+| 存在 `.worktrees/` | 使用（验证已 ignore） |
+| 存在 `worktrees/` | 使用（验证已 ignore） |
+| 两者都存在 | 使用 `.worktrees/` |
+| 都不存在 | 查 CLAUDE.md → 问用户 |
+| 目录未 ignore | 加入 .gitignore 并 commit |
+| 基线测试失败 | 报告失败并询问 |
+| 无 package.json/Cargo.toml | 跳过依赖安装 |
 
-## Common Mistakes
+## 常见错误
 
-### Skipping ignore verification
+### 跳过 ignore 验证
 
-- **Problem:** Worktree contents get tracked, pollute git status
-- **Fix:** Always use `git check-ignore` before creating project-local worktree
+- **问题：** worktree 内容被跟踪，污染 git status  
+- **修正：** 创建项目本地 worktree 前始终 `git check-ignore`  
 
-### Assuming directory location
+### 假定目录位置
 
-- **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow priority: existing > CLAUDE.md > ask
+- **问题：** 不一致，违反项目约定  
+- **修正：** 按优先级：已有 > CLAUDE.md > 询问  
 
-### Proceeding with failing tests
+### 在测试失败时仍继续
 
-- **Problem:** Can't distinguish new bugs from pre-existing issues
-- **Fix:** Report failures, get explicit permission to proceed
+- **问题：** 无法区分新 bug 与既有问题  
+- **修正：** 报告失败，取得明确许可再继续  
 
-### Hardcoding setup commands
+### 硬编码安装命令
 
-- **Problem:** Breaks on projects using different tools
-- **Fix:** Auto-detect from project files (package.json, etc.)
+- **问题：** 在不同工具链的项目上失效  
+- **修正：** 根据项目文件自动检测（package.json 等）  
 
-## Example Workflow
+## 示例工作流
 
 ```
 You: I'm using the using-git-worktrees skill to set up an isolated workspace.
@@ -191,28 +191,28 @@ Tests passing (47 tests, 0 failures)
 Ready to implement auth feature
 ```
 
-## Red Flags
+## 危险信号
 
-**Never:**
-- Create worktree without verifying it's ignored (project-local)
-- Skip baseline test verification
-- Proceed with failing tests without asking
-- Assume directory location when ambiguous
-- Skip CLAUDE.md check
+**绝不：**
+- 项目本地 worktree 未验证 ignore 就创建  
+- 跳过基线测试验证  
+- 测试失败未询问就继续  
+- 位置有歧义时自作主张  
+- 跳过 CLAUDE.md 检查  
 
-**Always:**
-- Follow directory priority: existing > CLAUDE.md > ask
-- Verify directory is ignored for project-local
-- Auto-detect and run project setup
-- Verify clean test baseline
+**务必：**
+- 按优先级：已有 > CLAUDE.md > 询问  
+- 项目本地须验证目录已 ignore  
+- 自动检测并运行项目初始化  
+- 验证干净测试基线  
 
-## Integration
+## 集成
 
-**Called by:**
-- **brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
-- **subagent-driven-development** - REQUIRED before executing any tasks
-- **executing-plans** - REQUIRED before executing any tasks
-- Any skill needing isolated workspace
+**由以下调用：**
+- **brainstorming**（第 4 阶段）— 设计批准且随后实现时**必选**  
+- **subagent-driven-development** — 执行任何任务前**必选**  
+- **executing-plans** — 执行任何任务前**必选**  
+- 任何需要隔离工作区的 skill  
 
-**Pairs with:**
-- **finishing-a-development-branch** - REQUIRED for cleanup after work complete
+**搭配：**
+- **finishing-a-development-branch** — 工作完成后**必选**清理  

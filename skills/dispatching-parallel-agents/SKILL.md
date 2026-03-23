@@ -3,17 +3,17 @@ name: dispatching-parallel-agents
 description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
 ---
 
-# Dispatching Parallel Agents
+# 并行派发 Agent
 
-## Overview
+## 概述
 
-You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
+将任务委派给上下文隔离的专业 agent。通过精确编写其指令与上下文，使其专注并成功完成任务。它们不应继承本会话的上下文或历史——你只构造它们需要的内容。这也为你保留上下文，便于协调。
 
-When you have multiple unrelated failures (different test files, different subsystems, different bugs), investigating them sequentially wastes time. Each investigation is independent and can happen in parallel.
+当存在多个互不相关的失败（不同测试文件、不同子系统、不同 bug）时，串行排查浪费时间。每项调查彼此独立，可以并行进行。
 
-**Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
+**核心原则：** 每个独立问题域派发一个 agent，让它们并发工作。
 
-## When to Use
+## 何时使用
 
 ```dot
 digraph when_to_use {
@@ -33,37 +33,37 @@ digraph when_to_use {
 }
 ```
 
-**Use when:**
-- 3+ test files failing with different root causes
-- Multiple subsystems broken independently
-- Each problem can be understood without context from others
-- No shared state between investigations
+**适用于：**
+- 3+ 个测试文件失败且根因不同
+- 多个子系统各自独立损坏
+- 每个问题无需其他问题的上下文即可理解
+- 调查之间无共享状态
 
-**Don't use when:**
-- Failures are related (fix one might fix others)
-- Need to understand full system state
-- Agents would interfere with each other
+**不适用于：**
+- 失败彼此相关（修一个可能修好别的）
+- 需要理解完整系统状态
+- agent 会互相干扰
 
-## The Pattern
+## 模式
 
-### 1. Identify Independent Domains
+### 1. 识别独立域
 
-Group failures by what's broken:
-- File A tests: Tool approval flow
-- File B tests: Batch completion behavior
-- File C tests: Abort functionality
+按「什么坏了」分组失败：
+- 文件 A 的测试：工具审批流
+- 文件 B 的测试：批处理完成行为
+- 文件 C 的测试：中止功能
 
-Each domain is independent - fixing tool approval doesn't affect abort tests.
+各域独立——修工具审批不会影响中止测试。
 
-### 2. Create Focused Agent Tasks
+### 2. 构造聚焦的 Agent 任务
 
-Each agent gets:
-- **Specific scope:** One test file or subsystem
-- **Clear goal:** Make these tests pass
-- **Constraints:** Don't change other code
-- **Expected output:** Summary of what you found and fixed
+每个 agent 获得：
+- **明确范围：** 一个测试文件或子系统
+- **清晰目标：** 让这些测试通过
+- **约束：** 不要改动其他代码
+- **期望输出：** 你发现并修复了什么的摘要
 
-### 3. Dispatch in Parallel
+### 3. 并行派发
 
 ```typescript
 // In Claude Code / AI environment
@@ -73,20 +73,20 @@ Task("Fix tool-approval-race-conditions.test.ts failures")
 // All three run concurrently
 ```
 
-### 4. Review and Integrate
+### 4. 审阅与整合
 
-When agents return:
-- Read each summary
-- Verify fixes don't conflict
-- Run full test suite
-- Integrate all changes
+当 agent 返回时：
+- 阅读各摘要
+- 确认修复无冲突
+- 跑完整测试套件
+- 整合所有变更
 
-## Agent Prompt Structure
+## Agent 提示结构
 
-Good agent prompts are:
-1. **Focused** - One clear problem domain
-2. **Self-contained** - All context needed to understand the problem
-3. **Specific about output** - What should the agent return?
+好的 agent 提示具备：
+1. **聚焦** — 单一清晰问题域
+2. **自包含** — 理解问题所需的全部上下文
+3. **输出明确** — agent 应返回什么？
 
 ```markdown
 Fix the 3 failing tests in src/agents/agent-tool-abort.test.ts:
@@ -109,74 +109,74 @@ Do NOT just increase timeouts - find the real issue.
 Return: Summary of what you found and what you fixed.
 ```
 
-## Common Mistakes
+## 常见错误
 
-**❌ Too broad:** "Fix all the tests" - agent gets lost
-**✅ Specific:** "Fix agent-tool-abort.test.ts" - focused scope
+**❌ 过宽：**「修所有测试」— agent 会迷失  
+**✅ 具体：**「修 agent-tool-abort.test.ts」— 范围聚焦
 
-**❌ No context:** "Fix the race condition" - agent doesn't know where
-**✅ Context:** Paste the error messages and test names
+**❌ 无上下文：**「修 race condition」— agent 不知道在哪  
+**✅ 有上下文：** 粘贴错误信息与测试名
 
-**❌ No constraints:** Agent might refactor everything
-**✅ Constraints:** "Do NOT change production code" or "Fix tests only"
+**❌ 无约束：** agent 可能大重构  
+**✅ 有约束：**「不要改生产代码」或「只修测试」
 
-**❌ Vague output:** "Fix it" - you don't know what changed
-**✅ Specific:** "Return summary of root cause and changes"
+**❌ 输出模糊：**「修好它」— 你不知道改了什么  
+**✅ 具体：**「返回根因与变更摘要」
 
-## When NOT to Use
+## 何时不要用
 
-**Related failures:** Fixing one might fix others - investigate together first
-**Need full context:** Understanding requires seeing entire system
-**Exploratory debugging:** You don't know what's broken yet
-**Shared state:** Agents would interfere (editing same files, using same resources)
+**相关失败：** 修一个可能修好别的 — 先一起调查  
+**需要完整上下文：** 理解依赖看到整个系统  
+**探索式调试：** 还不清楚哪里坏了  
+**共享状态：** agent 会互相干扰（改同一文件、争用同一资源）
 
-## Real Example from Session
+## 会话中的真实示例
 
-**Scenario:** 6 test failures across 3 files after major refactoring
+**场景：** 大重构后 3 个文件共 6 个测试失败
 
-**Failures:**
-- agent-tool-abort.test.ts: 3 failures (timing issues)
-- batch-completion-behavior.test.ts: 2 failures (tools not executing)
-- tool-approval-race-conditions.test.ts: 1 failure (execution count = 0)
+**失败：**
+- agent-tool-abort.test.ts：3 个失败（时序）
+- batch-completion-behavior.test.ts：2 个失败（工具未执行）
+- tool-approval-race-conditions.test.ts：1 个失败（执行次数为 0）
 
-**Decision:** Independent domains - abort logic separate from batch completion separate from race conditions
+**决策：** 独立域 — 中止逻辑、批处理完成、race 条件彼此分离
 
-**Dispatch:**
+**派发：**
 ```
 Agent 1 → Fix agent-tool-abort.test.ts
 Agent 2 → Fix batch-completion-behavior.test.ts
 Agent 3 → Fix tool-approval-race-conditions.test.ts
 ```
 
-**Results:**
-- Agent 1: Replaced timeouts with event-based waiting
-- Agent 2: Fixed event structure bug (threadId in wrong place)
-- Agent 3: Added wait for async tool execution to complete
+**结果：**
+- Agent 1：用基于事件的等待替代 timeout
+- Agent 2：修复事件结构 bug（threadId 位置错误）
+- Agent 3：增加等待异步工具执行完成
 
-**Integration:** All fixes independent, no conflicts, full suite green
+**整合：** 修复彼此独立、无冲突，全套件通过
 
-**Time saved:** 3 problems solved in parallel vs sequentially
+**节省时间：** 3 个问题并行解决，相对串行
 
-## Key Benefits
+## 主要收益
 
-1. **Parallelization** - Multiple investigations happen simultaneously
-2. **Focus** - Each agent has narrow scope, less context to track
-3. **Independence** - Agents don't interfere with each other
-4. **Speed** - 3 problems solved in time of 1
+1. **并行化** — 多项调查同时进行  
+2. **聚焦** — 每个 agent 范围窄，要跟踪的上下文更少  
+3. **独立** — agent 互不干扰  
+4. **速度** — 3 个问题约等于 1 倍时间解决
 
-## Verification
+## 验证
 
-After agents return:
-1. **Review each summary** - Understand what changed
-2. **Check for conflicts** - Did agents edit same code?
-3. **Run full suite** - Verify all fixes work together
-4. **Spot check** - Agents can make systematic errors
+agent 返回后：
+1. **阅读各摘要** — 理解改了什么  
+2. **检查冲突** — 是否改了同一处代码？  
+3. **跑全套件** — 确认修复能协同工作  
+4. **抽查** — agent 也可能犯系统性错误
 
-## Real-World Impact
+## 实际影响
 
-From debugging session (2025-10-03):
-- 6 failures across 3 files
-- 3 agents dispatched in parallel
-- All investigations completed concurrently
-- All fixes integrated successfully
-- Zero conflicts between agent changes
+来自调试会话（2025-10-03）：
+- 3 个文件共 6 个失败
+- 并行派发 3 个 agent
+- 调查均并发完成
+- 修复成功整合
+- agent 变更之间零冲突
